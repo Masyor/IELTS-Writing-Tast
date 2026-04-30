@@ -23,7 +23,7 @@ export default function Review({ submission: initialSubmission, pack, onBack, us
   const [selfAssessment, setSelfAssessment] = useState(submission.selfAssessment || {});
   const [isSaving, setIsSaving] = useState(false);
 
-  const isTeacher = checkTeacher(user);
+  const isTeacher = checkTeacher(user) && user?.uid !== submission.userId;
 
   useEffect(() => {
     // If student is viewing, update lastStudentViewedAt
@@ -111,6 +111,9 @@ export default function Review({ submission: initialSubmission, pack, onBack, us
       <header className="bg-white border-b shrink-0">
         <div className="w-full px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={onBack} className="rounded-full h-10 w-10 p-0 text-slate-400 hover:text-slate-800 hover:bg-slate-100">
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
             <h1 className="text-xl font-bold text-slate-800">Test Review</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -124,6 +127,11 @@ export default function Review({ submission: initialSubmission, pack, onBack, us
               <CheckCircle2 className="w-3.5 h-3.5" />
               SUBMITTED
             </div>
+            {!isTeacher && (
+              <Button size="sm" onClick={onBack} className="bg-slate-800 hover:bg-slate-900 rounded-xl px-4 font-bold shadow-sm ring-1 ring-slate-200">
+                Done Reviewing
+              </Button>
+            )}
           </div>
         </div>
       </header>

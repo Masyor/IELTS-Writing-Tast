@@ -6,6 +6,7 @@ import {
 import { auth, signInWithGoogle, dbService, isTeacher } from './lib/firebase';
 import { TestMode, SubmissionStatus, Submission, TestPack } from './types';
 import testPacksData from './testPacks.json';
+import promptsData from './prompts.json';
 
 // Components
 import Login from './components/Login';
@@ -68,7 +69,20 @@ export default function App() {
   };
 
   const handleResumeTest = (submission: Submission) => {
-    const pack = testPacksData.find(p => p.id === submission.testPackId);
+    let pack: any = testPacksData.find(p => p.id === submission.testPackId);
+    
+    if (!pack && submission.testPackId?.startsWith('custom_')) {
+      const [_, t1Id, t2Id] = submission.testPackId.split('_');
+      const t1 = promptsData.task1.find(t => t.id === t1Id);
+      const t2 = promptsData.task2.find(t => t.id === t2Id);
+      pack = {
+        id: submission.testPackId,
+        title: `Custom Practice: ${t1?.title || ''}${t1 && t2 ? ' & ' : ''}${t2?.title || ''}`,
+        task1: t1 || { title: 'None', prompt: 'No Task 1' },
+        task2: t2 || { title: 'None', prompt: 'No Task 2' }
+      };
+    }
+
     if (pack) {
       setSelectedPack(pack as TestPack);
       setCurrentSubmission(submission);
@@ -77,7 +91,20 @@ export default function App() {
   };
 
   const handleViewReview = (submission: Submission) => {
-    const pack = testPacksData.find(p => p.id === submission.testPackId);
+    let pack: any = testPacksData.find(p => p.id === submission.testPackId);
+    
+    if (!pack && submission.testPackId?.startsWith('custom_')) {
+      const [_, t1Id, t2Id] = submission.testPackId.split('_');
+      const t1 = promptsData.task1.find(t => t.id === t1Id);
+      const t2 = promptsData.task2.find(t => t.id === t2Id);
+      pack = {
+        id: submission.testPackId,
+        title: `Custom Practice: ${t1?.title || ''}${t1 && t2 ? ' & ' : ''}${t2?.title || ''}`,
+        task1: t1 || { title: 'None', prompt: 'No Task 1' },
+        task2: t2 || { title: 'None', prompt: 'No Task 2' }
+      };
+    }
+
     if (pack) {
       setSelectedPack(pack as TestPack);
       setCurrentSubmission(submission);

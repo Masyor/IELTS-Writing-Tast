@@ -10,12 +10,14 @@ export enum SubmissionStatus {
 }
 
 export interface Task1Data {
+  id: string;
   title: string;
   prompt: string;
   image?: string;
 }
 
 export interface Task2Data {
+  id: string;
   title: string;
   prompt: string;
 }

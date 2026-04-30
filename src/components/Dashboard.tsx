@@ -19,11 +19,13 @@ import {
   LayoutDashboard,
   LogOut,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { dbService, isTeacher } from '@/lib/firebase';
 import { Submission, TestPack, TestMode, SubmissionStatus } from '@/types';
 import testPacksData from '@/testPacks.json';
+import promptsData from '@/prompts.json';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -45,6 +47,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { motion, AnimatePresence } from 'motion/react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 
@@ -60,8 +63,8 @@ interface DashboardProps {
 export default function Dashboard({ user, onStartTest, onResumeTest, onViewReview, onOpenTeacher, onLogout }: DashboardProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPack, setSelectedPack] = useState<TestPack | null>(null);
-  const [selectedMode, setSelectedMode] = useState<TestMode>(TestMode.BOTH);
+  const [selectedTask1Id, setSelectedTask1Id] = useState<string>('');
+  const [selectedTask2Id, setSelectedTask2Id] = useState<string>('');
   const [classCode, setClassCode] = useState('');
   const [joining, setJoining] = useState(false);
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -131,6 +134,22 @@ export default function Dashboard({ user, onStartTest, onResumeTest, onViewRevie
 
   const ongoingTests = submissions.filter(s => s.status === SubmissionStatus.IN_PROGRESS);
   const completedTests = submissions.filter(s => s.status === SubmissionStatus.SUBMITTED);
+
+  const getPackTitle = (testPackId: string) => {
+    const pack = testPacksData.find(p => p.id === testPackId);
+    if (pack) return pack.title;
+    
+    if (testPackId?.startsWith('custom_')) {
+      const [_, t1Id, t2Id] = testPackId.split('_');
+      const t1 = promptsData.task1.find(t => t.id === t1Id);
+      const t2 = promptsData.task2.find(t => t.id === t2Id);
+      if (t1 && t2) return `Custom: ${t1.title} & ${t2.title}`;
+      if (t1) return `Custom: ${t1.title}`;
+      if (t2) return `Custom: ${t2.title}`;
+    }
+    
+    return 'Unknown Test';
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 pt-12 pb-24">
@@ -221,95 +240,155 @@ export default function Dashboard({ user, onStartTest, onResumeTest, onViewRevie
         </TabsList>
 
         <TabsContent value="available" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {(testPacksData as TestPack[]).map((pack) => (
-              <Card key={pack.id} className="group hover:shadow-xl transition-all duration-300 border-none bg-white shadow-md overflow-hidden flex flex-col">
-                <div className="h-2 bg-slate-800"></div>
-                <CardHeader>
-                  <CardTitle className="text-xl group-hover:text-slate-800 transition-colors">{pack.title}</CardTitle>
-                  <CardDescription>Academic Training</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-4">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <FileText className="w-4 h-4 text-slate-400" />
-                    <span>2 Tasks (Report + Essay)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Clock className="w-4 h-4 text-slate-400" />
-                    <span>60 Minutes total</span>
-                  </div>
-                </CardContent>
-                <div className="p-6 pt-0 mt-auto">
-                  <Dialog>
-                    <DialogTrigger render={<Button className="w-full bg-slate-800 hover:bg-slate-700 h-11 text-base font-medium rounded-xl group-hover:translate-y-[-2px] transition-transform shadow-lg" />}>
-                      Start Mock Test
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px] rounded-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Configure Test Session</DialogTitle>
-                        <DialogDescription>
-                          Choose which part of the test you'd like to attempt. 
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        {userProfile?.activeClassCodes?.length > 0 && (
-                          <div className="space-y-2">
-                            <Label>Assign to Class</Label>
-                            <select 
-                              className="w-full border rounded-xl p-3 bg-white"
-                              value={selectedClass}
-                              onChange={(e) => setSelectedClass(e.target.value)}
-                            >
-                              <option value="">No Class (Private)</option>
-                              {userProfile.activeClassCodes.map((code: string) => (
-                                <option key={code} value={code}>Class {code}</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                        <RadioGroup 
-                          defaultValue={TestMode.BOTH} 
-                          onValueChange={(v) => setSelectedMode(v as TestMode)}
-                          className="gap-4"
-                        >
-                          <div className="flex items-center space-x-3 p-4 border rounded-xl hover:bg-slate-50 cursor-pointer">
-                            <RadioGroupItem value={TestMode.BOTH} id="both" />
-                            <Label htmlFor="both" className="flex-1 cursor-pointer">
-                              <p className="font-semibold">Full Test (Task 1 & 2)</p>
-                              <p className="text-xs text-slate-500">60 Minutes countdown</p>
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-3 p-4 border rounded-xl hover:bg-slate-50 cursor-pointer">
-                            <RadioGroupItem value={TestMode.TASK1} id="task1" />
-                            <Label htmlFor="task1" className="flex-1 cursor-pointer">
-                              <p className="font-semibold">Task 1 Only</p>
-                              <p className="text-xs text-slate-500">20 Minutes countdown</p>
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-3 p-4 border rounded-xl hover:bg-slate-50 cursor-pointer">
-                            <RadioGroupItem value={TestMode.TASK2} id="task2" />
-                            <Label htmlFor="task2" className="flex-1 cursor-pointer">
-                              <p className="font-semibold">Task 2 Only</p>
-                              <p className="text-xs text-slate-500">40 Minutes countdown</p>
-                            </Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-                      <Button 
-                        onClick={() => {
-                          const packWithClass = { ...pack, classCode: selectedClass };
-                          onStartTest(packWithClass as any, selectedMode);
-                        }}
-                        className="w-full bg-slate-800 hover:bg-slate-700 h-12 rounded-xl text-lg font-bold"
-                      >
-                        Launch Test
-                      </Button>
-                    </DialogContent>
-                  </Dialog>
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl mx-auto mb-8 space-y-4"
+          >
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl">
+              <div className="flex gap-3">
+                <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-800 space-y-2">
+                  <p className="font-bold">Getting Started:</p>
+                  <ul className="list-disc list-inside space-y-1 opacity-90">
+                    <li>If your teacher gave you a <strong>Class Code</strong>, click "Join Class" above to link your results.</li>
+                    <li>Select one or both tasks below to begin a timed session.</li>
+                    <li>The timer will start immediately once you click "Launch Test".</li>
+                  </ul>
                 </div>
-              </Card>
-            ))}
-          </div>
+              </div>
+            </div>
+            
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl">
+              <div className="flex gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-bold">Self-Assessment Disclaimer:</p>
+                  <p className="opacity-90">
+                    The band scores you select during the review phase are <strong>unofficial</strong>. They are based entirely on your own interpretation of the IELTS criteria and are intended for self-reflection and practice purposes only.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <Card className="bg-white border-none shadow-md overflow-hidden max-w-2xl mx-auto rounded-3xl">
+            <div className="h-2 bg-slate-800"></div>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-2xl font-bold text-slate-800">Configure Your Mock test</CardTitle>
+              <CardDescription>Select Tasks to practice and your timer will adjust automatically.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8 pt-6">
+              {userProfile?.activeClassCodes?.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-slate-500 uppercase tracking-wider">Assign to Class (Optional)</Label>
+                  <select 
+                    className="w-full border-2 border-slate-100 rounded-2xl p-4 bg-slate-50 focus:border-slate-800 focus:bg-white transition-all outline-none"
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                  >
+                    <option value="">No Class (Private)</option>
+                    {userProfile.activeClassCodes.map((code: string) => (
+                      <option key={code} value={code}>Class {code}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="grid gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-slate-500 uppercase tracking-wider">Academic Task 1 (20m)</Label>
+                  <select 
+                    className="w-full border-2 border-slate-100 rounded-2xl p-4 bg-slate-50 focus:border-slate-800 focus:bg-white transition-all outline-none"
+                    value={selectedTask1Id}
+                    onChange={(e) => setSelectedTask1Id(e.target.value)}
+                  >
+                    <option value="">-- None --</option>
+                    <option value="random">🎲 Random Task 1</option>
+                    {promptsData.task1.map(task => (
+                      <option key={task.id} value={task.id}>{task.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-slate-500 uppercase tracking-wider">Academic Task 2 (40m)</Label>
+                  <select 
+                    className="w-full border-2 border-slate-100 rounded-2xl p-4 bg-slate-50 focus:border-slate-800 focus:bg-white transition-all outline-none"
+                    value={selectedTask2Id}
+                    onChange={(e) => setSelectedTask2Id(e.target.value)}
+                  >
+                    <option value="">-- None --</option>
+                    <option value="random">🎲 Random Task 2</option>
+                    {promptsData.task2.map(task => (
+                      <option key={task.id} value={task.id}>{task.title}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Selection Summary */}
+              {(selectedTask1Id || selectedTask2Id) && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-100 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">Projected Duration:</span>
+                    <div className="flex items-center gap-2 font-bold text-slate-800">
+                      <Clock className="w-4 h-4" />
+                      {selectedTask1Id && selectedTask2Id ? '60 mins' : selectedTask1Id ? '20 mins' : '40 mins'}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">Test Mode:</span>
+                    <div className="bg-slate-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-slate-600">
+                      {selectedTask1Id && selectedTask2Id ? 'Full Test' : selectedTask1Id ? 'Task 1 Only' : 'Task 2 Only'}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              <Button 
+                onClick={() => {
+                  if (!selectedTask1Id && !selectedTask2Id) return;
+                  
+                  // Handle random selection
+                  let t1 = promptsData.task1.find(t => t.id === selectedTask1Id);
+                  if (selectedTask1Id === 'random') {
+                    const idx = Math.floor(Math.random() * promptsData.task1.length);
+                    t1 = promptsData.task1[idx];
+                  }
+
+                  let t2 = promptsData.task2.find(t => t.id === selectedTask2Id);
+                  if (selectedTask2Id === 'random') {
+                    const idx = Math.floor(Math.random() * promptsData.task2.length);
+                    t2 = promptsData.task2[idx];
+                  }
+                  
+                  const mode = selectedTask1Id && selectedTask2Id 
+                    ? TestMode.BOTH 
+                    : selectedTask1Id ? TestMode.TASK1 : TestMode.TASK2;
+
+                  const pack: any = {
+                    id: `custom_${t1?.id || 'none'}_${t2?.id || 'none'}_${Date.now()}`,
+                    title: `Custom Practice: ${t1?.title || ''}${t1 && t2 ? ' & ' : ''}${t2?.title || ''}`,
+                    task1: t1 || { title: 'None', prompt: 'No Task 1' },
+                    task2: t2 || { title: 'None', prompt: 'No Task 2' },
+                    classCode: selectedClass
+                  };
+
+                  onStartTest(pack, mode);
+                }}
+                disabled={!selectedTask1Id && !selectedTask2Id}
+                className="w-full bg-slate-800 hover:bg-slate-700 h-16 rounded-2xl text-xl font-bold shadow-xl group transition-all"
+              >
+                Launch Test Environment
+                <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="activity">
@@ -330,7 +409,7 @@ export default function Dashboard({ user, onStartTest, onResumeTest, onViewRevie
                           </div>
                           <div>
                             <p className="font-bold text-slate-800">
-                              {testPacksData.find(p => p.id === sub.testPackId)?.title}
+                              {getPackTitle(sub.testPackId)}
                             </p>
                             <p className="text-sm text-slate-500">
                               Started {format(new Date(sub.startedAt), 'MMM d, h:mm a')} • {sub.mode.replace('task', 'Task ')}
@@ -391,7 +470,7 @@ export default function Dashboard({ user, onStartTest, onResumeTest, onViewRevie
                           </div>
                           <div>
                             <p className="font-bold text-slate-800 flex items-center gap-2">
-                              {testPacksData.find(p => p.id === sub.testPackId)?.title}
+                              {getPackTitle(sub.testPackId)}
                               {!!sub.teacherReviewedAt && (!sub.studentLastViewedAt || new Date(sub.teacherReviewedAt) > new Date(sub.studentLastViewedAt)) && (
                                 <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse" title="New teacher feedback" />
                               )}

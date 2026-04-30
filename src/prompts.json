@@ -1,0 +1,50 @@
+{
+  "task1": [
+    {
+      "id": "t1_line_graph",
+      "title": "Line Graph: Meat Consumption",
+      "prompt": "The graph below shows the consumption of fish and some different kinds of meat in a European country between 1979 and 2004. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "image": "https://images.unsplash.com/photo-1543286386-713bcd53b371?q=80&w=600&auto=format&fit=crop"
+    },
+    {
+      "id": "t1_pie_chart",
+      "title": "Pie Charts: Success Factors",
+      "prompt": "The charts below show the results of a survey about what people think is the most important factor for a successful life in 1980 and 2010. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "image": "https://images.unsplash.com/photo-1551288049-bbbda536639a?q=80&w=600&auto=format&fit=crop"
+    },
+    {
+      "id": "t1_process",
+      "title": "Process Diagram: Olive Oil",
+      "prompt": "The diagram below shows the various stages in the production of olive oil. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "image": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?q=80&w=600&auto=format&fit=crop"
+    },
+    {
+      "id": "t1_table",
+      "title": "Table: Population Growth",
+      "prompt": "The table below shows the population of four different countries in 2000 and the projected population in 2050. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "image": "https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?q=80&w=600&auto=format&fit=crop"
+    }
+  ],
+  "task2": [
+    {
+      "id": "t2_education",
+      "title": "Education: University Costs",
+      "prompt": "Some people believe that university education should be free for everyone, while others argue that students should pay for their own education. Discuss both views and give your own opinion. Give reasons for your answer and include any relevant examples from your own knowledge or experience."
+    },
+    {
+      "id": "t2_environment",
+      "title": "Environment: Fuel Pricing",
+      "prompt": "Some people think that the best way to solve environmental problems is to increase the price of fuel. To what extent do you agree or disagree? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
+    },
+    {
+      "id": "t2_technology",
+      "title": "Technology: AI and Jobs",
+      "prompt": "With the rise of artificial intelligence, some people fear that many jobs will be replaced by robots. What are the potential impacts of this on society, and what measures can be taken to mitigate these effects?"
+    },
+    {
+      "id": "t2_health",
+      "title": "Health: Modern Lifestyles",
+      "prompt": "Modern lifestyles are often associated with high stress and poor diet. What are the long-term effects of this on society, and what can individuals and governments do to address this issue?"
+    }
+  ]
+}
