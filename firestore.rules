@@ -9,6 +9,12 @@ service cloud.firestore {
     // Global Helpers
     function isSignedIn() { return request.auth != null; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == 'matt.longthorne@gmail.com' && 
+        request.auth.token.email_verified == true
+      ); 
+    }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
@@ -25,7 +31,7 @@ service cloud.firestore {
       }
       
       allow get: if isSignedIn();
-      allow list: if false; // Users shouldn't be listable
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isOwner(userId) && isValidUser(incoming())
         && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'activeClassCodes', 'role']);
@@ -45,7 +51,8 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow list: if isSignedIn(); // Teachers need to list their classes
       allow create: if isSignedIn() && isValidClass(incoming());
-      allow update: if isSignedIn() && existing().teacherId == request.auth.uid && isValidClass(incoming())
+      allow update: if (isAdmin() || (isSignedIn() && existing().teacherId == request.auth.uid)) 
+        && isValidClass(incoming())
         && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'active']);
     }
 
@@ -66,25 +73,25 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/classes/$(submissionData.classCode)).data.teacherId == request.auth.uid;
       }
 
-      allow get: if isOwner(existing().userId) || canTeacherView(existing());
-      allow list: if isSignedIn() && (
+      allow get: if isOwner(existing().userId) || canTeacherView(existing()) || isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && (
         (resource.data.userId == request.auth.uid) || 
         (canTeacherView(resource.data))
-      );
+      ));
       allow create: if isSignedIn() && isValidSubmission(incoming());
-      allow update: if (isOwner(existing().userId) || canTeacherView(existing())) 
+      allow update: if (isOwner(existing().userId) || canTeacherView(existing()) || isAdmin()) 
         && isValidSubmission(incoming())
         && (
           // Action: Student update their own submission
           (isOwner(existing().userId) && existing().status == 'in-progress') ||
           // Action: Teacher review
-          (canTeacherView(existing()) && incoming().diff(existing()).affectedKeys().hasOnly([
+          ((canTeacherView(existing()) || isAdmin()) && incoming().diff(existing()).affectedKeys().hasOnly([
             'teacherAnnotations', 'teacherFeedback', 'teacherReviewedAt', 'studentLastViewedAt'
           ])) ||
           // Action: Self assessment
           (isOwner(existing().userId) && incoming().diff(existing()).affectedKeys().hasOnly(['selfAssessment']))
         );
-      allow delete: if isOwner(existing().userId);
+      allow delete: if isOwner(existing().userId) || isAdmin();
     }
 
     // --- Test Packs (Static config stored in DB) ---

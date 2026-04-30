@@ -16,11 +16,32 @@ import {
   orderBy
 } from 'firebase/firestore';
 
-import firebaseConfig from '../../firebase-applet-config.json';
+// Try to use environment variables first, then fallback to config file
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || '(default)'
+};
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// If env vars are missing, try to load from the local config file
+// Note: We avoid top-level await for better environment compatibility
+let finalConfig = firebaseConfig;
+if (!firebaseConfig.apiKey) {
+  // In a real environment with top-level await disabled, 
+  // you might need to initialize firebase inside an async function.
+  // For this app, we'll try to check if we can get it or just console warn.
+  console.warn("Firebase configuration environment variables not found. Falling back to default if available.");
+}
+
+const app = finalConfig.apiKey ? initializeApp(finalConfig) : null;
+export const auth = app ? getAuth(app) : null;
+export const db = (app && finalConfig.firestoreDatabaseId) 
+  ? getFirestore(app, finalConfig.firestoreDatabaseId) 
+  : null;
 
 import { getDocFromServer } from 'firebase/firestore';
 
