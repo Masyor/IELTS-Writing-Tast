@@ -14,10 +14,9 @@ service cloud.firestore {
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     function isVerified() { return request.auth.token.email_verified == true; }
     function isTeacher() {
-      return isSignedIn() && (
-        request.auth.token.email.lower().endsWith('@acecambodia.org') ||
-        request.auth.token.email.lower() == 'matt.longthorne@gmail.com'
-      );
+      return isSignedIn() && 
+        (request.auth.token.email.matches('(?i).+@acecambodia\\.org$') || 
+         request.auth.token.email.matches('(?i)matt\\.longthorne@gmail\\.com'));
     }
     function isAdmin() { 
       return isTeacher(); 
