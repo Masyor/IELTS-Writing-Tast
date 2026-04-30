@@ -9,18 +9,19 @@ service cloud.firestore {
     // Global Helpers
     function isSignedIn() { return request.auth != null; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
-    function isAdmin() { 
-      return isSignedIn() && (
-        request.auth.token.email == 'matt.longthorne@gmail.com' && 
-        request.auth.token.email_verified == true
-      ); 
-    }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     function isVerified() { return request.auth.token.email_verified == true; }
-
-    // --- Users Collection ---
+    function isTeacher() {
+      return isSignedIn() && isVerified() && (
+        request.auth.token.email.endsWith('@acecambodia.org') ||
+        request.auth.token.email == 'matt.longthorne@gmail.com'
+      );
+    }
+    function isAdmin() { 
+      return isTeacher(); 
+    }
     match /users/{userId} {
       function isValidUser(data) {
         return data.keys().hasAll(['uid', 'email']) 
@@ -91,11 +92,13 @@ service cloud.firestore {
           // Action: Teacher review
           ((canTeacherView(existing()) || isAdmin()) && (
             incoming().diff(existing()).affectedKeys().hasOnly([
-              'teacherAnnotations', 'teacherFeedback', 'teacherReviewedAt', 'studentLastViewedAt', 'status'
+              'teacherAnnotations', 'teacherFeedback', 'teacherReviewedAt', 'studentLastViewedAt', 'status', 'updatedAt'
             ])
           )) ||
-          // Action: Self assessment
-          (isOwner(existing().userId) && incoming().diff(existing()).affectedKeys().hasOnly(['selfAssessment']))
+          // Action: Student views or does self assessment
+          (isOwner(existing().userId) && incoming().diff(existing()).affectedKeys().hasOnly([
+            'selfAssessment', 'studentLastViewedAt', 'updatedAt'
+          ]))
         );
       allow delete: if isAdmin() || (isOwner(existing().userId) && existing().status == 'in-progress');
     }

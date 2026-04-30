@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChevronLeft, FileText, CheckCircle2, Save, MessageSquare, Star } from 'lucide-react';
 import SelfAssessmentGrid from './SelfAssessmentGrid';
-import { dbService } from '@/lib/firebase';
+import { dbService, isTeacher as checkTeacher } from '@/lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { TASK1_CRITERIA, TASK2_CRITERIA } from '@/constants';
 import AnnotatedText from './AnnotatedText';
@@ -23,7 +23,7 @@ export default function Review({ submission: initialSubmission, pack, onBack, us
   const [selfAssessment, setSelfAssessment] = useState(submission.selfAssessment || {});
   const [isSaving, setIsSaving] = useState(false);
 
-  const isTeacher = user?.email === 'matt.longthorne@gmail.com' || user?.uid === 'teacher-mock' || user?.role === 'teacher';
+  const isTeacher = checkTeacher(user);
 
   useEffect(() => {
     // If student is viewing, update lastStudentViewedAt
@@ -111,9 +111,6 @@ export default function Review({ submission: initialSubmission, pack, onBack, us
       <header className="bg-white border-b shrink-0">
         <div className="w-full px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={onBack} className="rounded-full h-10 w-10 p-0">
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
             <h1 className="text-xl font-bold text-slate-800">Test Review</h1>
           </div>
           <div className="flex items-center gap-3">

@@ -43,6 +43,27 @@ export const db = (app && finalConfig.firestoreDatabaseId)
   ? getFirestore(app, finalConfig.firestoreDatabaseId) 
   : null;
 
+// Teacher configuration
+export const TEACHER_CONFIG = {
+  DOMAIN: 'acecambodia.org', // Replace with your school domain, e.g., 'school.edu'
+  WHITELIST: ['matt.longthorne@gmail.com'] // Specific emails that are always teachers
+};
+
+export const isTeacher = (user: any) => {
+  if (!user || !user.email) return false;
+  
+  // Check whitelist first
+  if (TEACHER_CONFIG.WHITELIST.includes(user.email)) return true;
+  
+  // Check domain wildcard (ensure email is verified in a real env)
+  if (TEACHER_CONFIG.DOMAIN && user.email.endsWith(`@${TEACHER_CONFIG.DOMAIN}`)) {
+    // For safety, you might want to check user.emailVerified === true here
+    return true;
+  }
+  
+  return user.role === 'teacher';
+};
+
 import { getDocFromServer } from 'firebase/firestore';
 
 async function testConnection() {

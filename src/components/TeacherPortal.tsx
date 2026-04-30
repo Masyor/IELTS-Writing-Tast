@@ -20,7 +20,7 @@ import {
   Trash2,
   Plus
 } from 'lucide-react';
-import { dbService } from '@/lib/firebase';
+import { dbService, isTeacher } from '@/lib/firebase';
 import { Submission, SubmissionStatus, TestPack } from '@/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -64,7 +64,7 @@ export default function TeacherPortal({ onBack, user, packs }: TeacherPortalProp
     let data;
     if (codes && codes.length > 0) {
       data = await dbService.getSubmissionsByClasses(codes);
-    } else if (user.email === 'matt.longthorne@gmail.com') {
+    } else if (isTeacher(user)) {
       data = await dbService.getSubmissions();
     } else {
       data = [];

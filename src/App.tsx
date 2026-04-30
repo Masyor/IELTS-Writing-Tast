@@ -115,16 +115,7 @@ export default function App() {
   }
 
   if (!user) {
-    return <Login onLogin={handleLogin} onOpenTeacher={() => {
-      // Mock teacher login for testing
-      setUser({
-        uid: 'teacher-mock',
-        email: 'matt.longthorne@gmail.com',
-        displayName: 'Teacher Admin',
-        photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=teacher'
-      });
-      setView('teacher');
-    }} />;
+    return <Login onLogin={handleLogin} onOpenTeacher={() => {}} />;
   }
 
   return (

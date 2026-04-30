@@ -37,19 +37,6 @@ export default function Login({ onLogin, onOpenTeacher }: LoginProps) {
               <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
               Sign in with Google
             </Button>
-            
-            <div className="pt-8 border-t border-slate-100 flex flex-col gap-3">
-              <p className="text-[10px] text-center text-slate-400 uppercase tracking-widest font-bold mb-1">
-                Developer Access
-              </p>
-              <Button 
-                variant="ghost" 
-                onClick={onOpenTeacher}
-                className="w-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-xl flex items-center justify-center gap-2 text-xs"
-              >
-                Temporary Teacher Portal Login
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </motion.div>
