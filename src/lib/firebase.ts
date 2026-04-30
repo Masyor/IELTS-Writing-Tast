@@ -46,6 +46,7 @@ export const db = (app && finalConfig.firestoreDatabaseId)
 import { getDocFromServer } from 'firebase/firestore';
 
 async function testConnection() {
+  if (!db) return;
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
