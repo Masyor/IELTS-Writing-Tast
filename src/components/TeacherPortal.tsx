@@ -20,8 +20,10 @@ import {
   Trash2,
   Plus
 } from 'lucide-react';
-import { dbService, isTeacher } from '@/lib/firebase';
+import { dbService, isTeacher as checkTeacher } from '@/lib/firebase';
 import { Submission, SubmissionStatus, TestPack } from '@/types';
+import promptsData from '@/prompts.json';
+import testPacksData from '@/testPacks.json';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -61,16 +63,62 @@ export default function TeacherPortal({ onBack, user, packs }: TeacherPortalProp
 
   const fetchAllSubmissions = async (codes?: string[]) => {
     setLoading(true);
-    let data;
-    if (codes && codes.length > 0) {
-      data = await dbService.getSubmissionsByClasses(codes);
-    } else if (isTeacher(user)) {
-      data = await dbService.getSubmissions();
-    } else {
-      data = [];
+    try {
+      let data;
+      if (codes && codes.length > 0) {
+        data = await dbService.getSubmissionsByClasses(codes);
+      } else if (checkTeacher(user)) {
+        data = await dbService.getSubmissions();
+      } else {
+        data = [];
+      }
+      setSubmissions(data as Submission[]);
+    } catch (error) {
+      console.error('Failed to fetch submissions:', error);
+      setSubmissions([]);
+    } finally {
+      setLoading(false);
     }
-    setSubmissions(data as Submission[]);
-    setLoading(false);
+  };
+
+  const getPackTitle = (testPackId: string) => {
+    const pack = testPacksData.find(p => p.id === testPackId);
+    if (pack) return pack.title;
+    
+    if (testPackId?.startsWith('custom_')) {
+      const parts = testPackId.split('_');
+      // custom_task1Id_task2Id_timestamp
+      const t1Id = parts[1];
+      const t2Id = parts[2];
+      const t1 = promptsData.task1.find(t => t.id === t1Id);
+      const t2 = promptsData.task2.find(t => t.id === t2Id);
+      if (t1 && t2) return `Custom: ${t1.title} & ${t2.title}`;
+      if (t1) return `Custom: ${t1.title}`;
+      if (t2) return `Custom: ${t2.title}`;
+    }
+    
+    return testPackId;
+  };
+
+  const getVirtualPack = (testPackId: string) => {
+    const pack = testPacksData.find(p => p.id === testPackId);
+    if (pack) return pack;
+
+    if (testPackId?.startsWith('custom_')) {
+      const parts = testPackId.split('_');
+      const t1Id = parts[1];
+      const t2Id = parts[2];
+      const t1 = promptsData.task1.find(t => t.id === t1Id);
+      const t2 = promptsData.task2.find(t => t.id === t2Id);
+      return {
+        id: testPackId,
+        title: getPackTitle(testPackId),
+        task1: t1 || { title: 'None', prompt: 'No Task 1' },
+        task2: t2 || { title: 'None', prompt: 'No Task 2' }
+      };
+    }
+
+    return packs[0];
   };
 
   useEffect(() => {
@@ -347,7 +395,9 @@ export default function TeacherPortal({ onBack, user, packs }: TeacherPortalProp
                           <span className="text-slate-300 text-[10px] italic">Private</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm font-medium text-slate-600">{s.testPackId}</TableCell>
+                      <TableCell className="text-sm font-medium text-slate-600">
+                        {getPackTitle(s.testPackId)}
+                      </TableCell>
                       <TableCell>
                         <span className="text-[10px] font-black uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">
                           {s.mode.replace('task', 'Task ')}
@@ -411,7 +461,7 @@ export default function TeacherPortal({ onBack, user, packs }: TeacherPortalProp
                               </DialogHeader>
                               <Review 
                                 submission={s} 
-                                pack={packs.find(p => p.id === s.testPackId) || packs[0]} 
+                                pack={getVirtualPack(s.testPackId) as TestPack} 
                                 onBack={() => {}} 
                                 user={user}
                               />
